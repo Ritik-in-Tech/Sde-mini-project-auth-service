@@ -1,20 +1,60 @@
-import mongoose from "mongoose";
+import mysql from "mysql2/promise";
+import dotenv from "dotenv";
+dotenv.config();
 
-export let dbInstance = undefined;
-const connectDB = async () => {
+let pool;
+
+const createTcpPool = async (config = {}) => {
+  if (!pool) {
+    const dbConfig = {
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT, 10),
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ...config,
+    };
+
+    try {
+      pool = await mysql.createPool(dbConfig);
+      console.log("Connected to the database successfully.");
+
+      await createUsersTable(pool);
+    } catch (error) {
+      console.error("Error connecting to the database:", error);
+      throw error;
+    }
+  }
+  return pool;
+};
+
+const createUsersTable = async (pool) => {
+  const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS users (
+      id VARCHAR(36) NOT NULL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      password VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    );
+  `;
+
   try {
-    // console.log(process.env.DB_ADMIN);
-    const connectionInstance = await mongoose.connect(
-      `mongodb+srv://${process.env.DB_ADMIN}:${process.env.DB_PASSWORD}@software1.gptczdh.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority&appName=software1`
-    );
-    dbInstance = connectionInstance;
-    console.log(
-      `\n☘️  MongoDB Connected! Db host: ${connectionInstance.connection.host}\n`
-    );
+    await pool.query(createTableQuery);
+    console.log("Users table created or already exists.");
   } catch (error) {
-    console.log("MongoDB connection error: ", error);
-    process.exit(1);
+    console.error("Error creating users table:", error);
+    throw error;
   }
 };
 
-export { connectDB };
+const closePool = async () => {
+  if (pool) {
+    await pool.end();
+    pool = null;
+    console.log("Database connection pool closed.");
+  }
+};
+
+export { createTcpPool, closePool };

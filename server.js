@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import morgan from "morgan";
 import bodyParser from "body-parser";
-import { connectDB } from "./config/db.js";
+import { createTcpPool } from "./config/db.js";
 import userRoutes from "./routes/user.js";
 import { ApiResponse } from "./utils/helpers/apiResponse.js";
 
@@ -45,7 +45,7 @@ app.get("*", (req, res) => {
 // start server with connect with mongodb
 const startServer = async () => {
   try {
-    await connectDB();
+    await createTcpPool();
     app.listen(port, () => {
       console.log(`Server is running on port ${port}`);
     });
