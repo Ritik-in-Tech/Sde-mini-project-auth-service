@@ -1,0 +1,23 @@
+version: '3'
+services:
+  auth-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sde-mini-project-auth-backend
+    container_name: auth-backend
+    restart: unless-stopped
+    ports:
+    - 5000:5000
+    volumes:
+      - .:/app
+    networks:
+      - app-network
+    command: npm start
+ 
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  dbdata:
